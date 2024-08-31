@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Typing from "./component/Typing";
 
 const App = () => {
   const [image, setImage] = useState<File | null>(null);
@@ -19,15 +20,35 @@ const App = () => {
     setResponse("");
     setError("");
   };
-  let randomValue = 0;
-  useEffect(() => {
-    randomValue = Math.floor(Math.random() * imageOptions.length);
-  }, [randomValue]);
+
   const suprise = async () => {
+    const randomValue = Math.floor(Math.random() * imageOptions.length);
     const randomImage = imageOptions[randomValue];
     setValue(randomImage);
   };
-  const analyzeImg = async () => {};
+  const analyzeImg = async () => {
+    if (!image) {
+      setError("Error! Must have existing image");
+      return;
+    }
+    try {
+      const res = await fetch("http://localhost:5000/gemini", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: value,
+        }),
+      });
+      const data = await res.text();
+      setResponse(data);
+      console.log("gemini", data);
+    } catch (error) {
+      console.log(error);
+      setError("Something didn't work please try again");
+    }
+  };
 
   const uploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const formData = new FormData();
@@ -44,6 +65,8 @@ const App = () => {
       const data = await res.json();
       console.log(data);
     } catch (error) {
+      //@ts-ignore
+      setError(error.message);
       console.log(error);
     }
   };
@@ -51,44 +74,60 @@ const App = () => {
   console.log(image);
 
   return (
-    <div>
-      <section className="search-section">
-        <div className="img-container">
-          {/* //@ts-ignore*/}
-          {image && <img className="image" src={URL.createObjectURL(image)} />}
-        </div>
-        <p className="extra-info">
-          <span>
-            {" "}
-            <label htmlFor="files">Upload an image </label>
+    <>
+      <header>GEMINI VISION</header>
+      <div className="app">
+        <section className="search-section">
+          <div className="img-container">
+            {/* //@ts-ignore*/}
+            {image && (
+              <img className="image" src={URL.createObjectURL(image)} />
+            )}
+          </div>
+          <p className="extra-info">
+            <span>
+              {" "}
+              <label htmlFor="files" className="upload">
+                Upload an image{" "}
+              </label>
+              <input
+                type="file"
+                onChange={uploadImage}
+                id="files"
+                accept="image/*"
+                hidden
+              />
+            </span>
+            to ask questions about.
+          </p>
+          <p>
+            What do you want to know about the image?
+            <button className="suprise" onClick={suprise}>
+              Suprise me
+            </button>
+          </p>
+
+          <div className="input-container">
             <input
-              type="file"
-              onChange={uploadImage}
-              id="files"
-              accept="image/*"
-              hidden
+              type="text"
+              placeholder="What's in the image..."
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
             />
-          </span>
-          to ask questions about.
-        </p>
-        <p>What do you want to know about the image?</p>
-        <button className="suprise" onClick={suprise}>
-          Suprise me
-        </button>
-        <div className="input-container">
-          <input
-            type="text"
-            placeholder="What's in the image..."
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-          />
-          {!response && !error && <button onClick={analyzeImg}>Ask Me</button>}
-          {(response || error) && <button onClick={clear}>Clear</button>}
-        </div>
-        {error && <p>{error}</p>}
-        {response && <p>{response}</p>}
-      </section>
-    </div>
+            {!response && !error && (
+              <button onClick={analyzeImg}>Ask Me</button>
+            )}
+            {(response || error) && (
+              <button onClick={clear} className="clear">
+                Clear
+              </button>
+            )}
+          </div>
+          {error && <p>{error}</p>}
+          {response && <p>{response}</p>}
+        </section>
+      </div>
+    </>
   );
 };
 
