@@ -80,8 +80,10 @@ const App = () => {
         <section className="search-section">
           <div className="img-container">
             {/* //@ts-ignore*/}
-            {image && (
+            {image ? (
               <img className="image" src={URL.createObjectURL(image)} />
+            ) : (
+              <img className="image" src="no-image.png" />
             )}
           </div>
           <p className="extra-info">
